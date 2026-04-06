@@ -2,10 +2,12 @@ const User = require('../models/user.model');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 
+const JWT_SECRET = process.env.JWT_SECRET || 'uplodr_dev_secret';
+
 const generateToken = (user) => {
   return jwt.sign(
     { id: user._id, email: user.email },
-    process.env.JWT_SECRET,
+    JWT_SECRET,
     { expiresIn: '1d' }
   );
 };

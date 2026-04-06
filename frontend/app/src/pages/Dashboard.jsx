@@ -10,6 +10,9 @@ const Dashboard = () => {
   const [mediaList, setMediaList] = useState([]);
   const [isMediaLoading, setIsMediaLoading] = useState(true);
   const [filterType, setFilterType] = useState("All");
+  const [folderFilter, setFolderFilter] = useState("All");
+  const [folderOptions, setFolderOptions] = useState(["All"]);
+  const [folderCounts, setFolderCounts] = useState({});
 
   const user = useSelector((state) => state.auth.userData);
   const filterButtons = ["All", "Image", "Video"];
@@ -17,18 +20,35 @@ const Dashboard = () => {
   const fetchMedia = async () => {
     setIsMediaLoading(true);
     try {
-      const res = await getMediaList();
-      const allMedia = res || [];
+      const allMedia = (await getMediaList("All", "All")) || [];
 
-      const filteredMedia =
-        filterType === "All"
+      const folderCounts = allMedia.reduce((acc, item) => {
+        const folderName = item.folder || "Default";
+        acc[folderName] = (acc[folderName] || 0) + 1;
+        return acc;
+      }, {});
+
+      const folders = Object.keys(folderCounts).sort();
+
+      setFolderOptions(["All", ...folders]);
+      setFolderCounts(folderCounts);
+      setFolderFilter((prev) =>
+        prev === "All" || folders.includes(prev) ? prev : "All"
+      );
+
+      const folderFiltered =
+        folderFilter === "All"
           ? allMedia
-          : allMedia.filter(
-              (item) =>
-                item.file_type?.toLowerCase() === filterType.toLowerCase()
+          : allMedia.filter((item) => (item.folder || "Default") === folderFilter);
+
+      const filteredByType =
+        filterType === "All"
+          ? folderFiltered
+          : folderFiltered.filter(
+              (item) => item.file_type?.toLowerCase() === filterType.toLowerCase()
             );
 
-      setMediaList(filteredMedia);
+      setMediaList(filteredByType);
     } catch (err) {
       console.error("Failed to fetch media:", err);
       setMediaList([]);
@@ -39,7 +59,7 @@ const Dashboard = () => {
 
   useEffect(() => {
     fetchMedia();
-  }, [filterType]);
+  }, [filterType, folderFilter]);
 
   const handleDelete = async (id) => {
     try {
@@ -65,20 +85,34 @@ const Dashboard = () => {
           <span>Upload New File</span>
         </button>
 
-        <div className="flex flex-wrap space-x-2 w-full sm:w-auto">
-          {filterButtons.map((type) => (
-            <button
-              key={type}
-              onClick={() => setFilterType(type)}
-              className={`px-4 py-2 rounded-lg font-medium transition ${
-                filterType === type
-                  ? "bg-teal-600 text-white"
-                  : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-              }`}
-            >
-              {type}
-            </button>
-          ))}
+        <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
+          <div className="flex flex-wrap space-x-2 mb-2 sm:mb-0">
+            {filterButtons.map((type) => (
+              <button
+                key={type}
+                onClick={() => setFilterType(type)}
+                className={`px-4 py-2 rounded-lg font-medium transition ${
+                  filterType === type
+                    ? "bg-teal-600 text-white"
+                    : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                }`}
+              >
+                {type}
+              </button>
+            ))}
+          </div>
+
+          <select
+            value={folderFilter}
+            onChange={(e) => setFolderFilter(e.target.value)}
+            className="px-4 py-2 rounded-lg border border-gray-300 bg-white text-gray-700"
+          >
+            {folderOptions.map((folder) => (
+              <option key={folder} value={folder}>
+                {folder} {folder !== "All" && folderCounts[folder] ? `(${folderCounts[folder]})` : ""}
+              </option>
+            ))}
+          </select>
         </div>
       </div>
 
@@ -116,6 +150,7 @@ const Dashboard = () => {
 
       {showUploadModal && (
         <UploadModal
+          initialFolder={folderFilter === "All" ? "Default" : folderFilter}
           onClose={() => setShowUploadModal(false)}
           onUpload={fetchMedia}
         />

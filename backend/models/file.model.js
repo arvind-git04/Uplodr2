@@ -24,6 +24,16 @@ const mediaSchema = new Schema(
       required: true,
       trim: true,
     },
+    file_path: {
+      type: String,
+      trim: true,
+      default: "",
+    },
+    file_relative_path: {
+      type: String,
+      trim: true,
+      default: "",
+    },
     file_name: {
       type: String,
       required: true,
@@ -37,6 +47,11 @@ const mediaSchema = new Schema(
       type: String,
       enum: ["Image", "Video", "Other"],
       required: true,
+    },
+    folder: {
+      type: String,
+      trim: true,
+      default: "Default",
     },
   },
   {
