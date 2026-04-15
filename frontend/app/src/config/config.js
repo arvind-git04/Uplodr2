@@ -1,10 +1,9 @@
 function cleanEnvVar(value) {
-  return value.replace(/^"(.*)"$/, "$1"); 
+  return value.replace(/^"(.*)"$/, "$1");
 }
 
 const config = {
-  backendEndpoint: cleanEnvVar(import.meta.env.VITE_BACKEND_URL || ""),
+  backendEndpoint: "http://localhost:5000/api", // ✅ FIXED
 };
-
 
 export default config;
