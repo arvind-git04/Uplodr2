@@ -3,16 +3,16 @@ import { Folder, Trash2 } from "lucide-react";
 const FolderCard = ({ name, onClick, onDelete }) => {
   return (
     <div className="flex flex-col items-center group">
-      <div 
+      <div
         onClick={onClick}
         className="cursor-pointer transition-transform duration-200 hover:scale-105 active:scale-95"
       >
-        <Folder 
-          className="w-24 h-24 text-amber-500 fill-amber-50" 
+        <Folder
+          className="w-24 h-24 text-amber-500 fill-amber-50"
           strokeWidth={1.5}
         />
       </div>
-      
+
       <p className="mt-2 text-sm text-gray-700 font-medium truncate w-32 text-center" title={name}>
         {name}
       </p>
