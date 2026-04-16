@@ -94,3 +94,28 @@ export async function deleteMedia(id) {
 
   return data;
 }
+
+export async function deleteFolder(folderName) {
+  const token = localStorage.getItem("token");
+
+  const res = await fetch(`${config.backendEndpoint}/media/folder?folder=${encodeURIComponent(folderName)}`, {
+    method: "DELETE",
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  let data;
+  const text = await res.text();
+  try {
+    data = text ? JSON.parse(text) : {};
+  } catch (parseError) {
+    data = { message: text };
+  }
+
+  if (!res.ok) {
+    throw new Error(data.message || "Delete folder failed");
+  }
+
+  return data;
+}

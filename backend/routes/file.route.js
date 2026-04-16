@@ -5,6 +5,7 @@ const upload = require("../utils/s3.config");
 const {
   uploadMedia,
   deleteMedia,
+  deleteFolder,
   listMedia,
 } = require("../controllers/media.controller");
 
@@ -18,6 +19,7 @@ router.use((req, res, next) => {
 // ✅ FIXED
 router.post("/upload", protect, upload.single("media"), uploadMedia);
 router.get("/", protect, listMedia);
+router.delete("/folder", protect, deleteFolder);
 router.delete("/:id", protect, deleteMedia);
 
 module.exports = router;
