@@ -67,7 +67,21 @@ useEffect(() => {
 
     for (const file of filesToUpload) {
       try {
-        await uploadMedia(file, folderName, file.webkitRelativePath || file.name);
+        let finalFolder = folderName;
+        
+        // If it's a folder upload, calculate the relative sub-path
+        if (isFolderUpload && file.webkitRelativePath) {
+          const pathSegments = file.webkitRelativePath.split("/");
+          if (pathSegments.length > 2) {
+            // Remove the root folder name from the path and the filename at the end
+            // e.g. "Root/Sub/file.txt" -> ["Root", "Sub", "file.txt"] -> "Sub"
+            // Then prepend the user's chosen folderName
+            const subPath = pathSegments.slice(1, -1).join("/");
+            finalFolder = `${folderName}/${subPath}`;
+          }
+        }
+
+        await uploadMedia(file, finalFolder, file.webkitRelativePath || file.name);
         successCount += 1;
       } catch (err) {
         errors.push(`${file.name}: ${err.message || 'Upload failed'}`);

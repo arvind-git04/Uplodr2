@@ -31,7 +31,9 @@ const MediaCard = ({ media, onDelete }) => {
 
       <div className="p-4">
         <div className="mb-2">
-          <p className="text-sm font-semibold text-gray-800 truncate">{media.file_relative_path || media.file_name}</p>
+          <p className="text-sm font-semibold text-gray-800 truncate">
+            {(media.file_relative_path || media.file_name).split('/').pop()}
+          </p>
           <span className="text-xs text-gray-500">
             {media.file_type} • {formattedDate} • {media.folder || "Default"}
           </span>

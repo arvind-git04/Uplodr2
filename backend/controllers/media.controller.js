@@ -54,13 +54,16 @@ exports.uploadMedia = async (req, res) => {
       file_key: key,
       file_mimetype: mimetype,
       file_location: location,
-      file_path: req.file.path.replace(/\\/g, "/"),
       file_relative_path: fileRelativePath,
       file_name: filename,
       file_size: size,
       file_type: fileType,
       folder,
     });
+
+// 🔥 Public access via bucket policy (ACL disabled by bucket settings)
+    // Note: "bucket does not allow ACLs" is expected if "Bucket owner enforced"
+    console.log('✅ Upload complete - use bucket policy for public view');
 
     res.status(201).json({ message: 'Upload successful', media });
   } catch (error) {
@@ -72,6 +75,11 @@ exports.uploadMedia = async (req, res) => {
 
 exports.deleteMedia = async (req, res) => {
   try {
+    const mongoose = require("mongoose");
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+      return res.status(400).json({ message: "Invalid record ID" });
+    }
+
     if (!req.user || !req.user._id) {
       return res.status(401).json({ message: 'Unauthorized' });
     }
@@ -127,6 +135,80 @@ exports.deleteMedia = async (req, res) => {
       console.error('Delete Error:', error);
       res.status(500).json({ message: 'Delete failed' });
     }
+};
+
+exports.deleteFolder = async (req, res) => {
+  try {
+    if (!req.user || !req.user._id) {
+      return res.status(401).json({ message: 'Unauthorized' });
+    }
+
+    // Now retrieving from query parameter ?folder=...
+    const folderName = (req.query.folder || "").trim();
+
+    if (!folderName || folderName === "Default") {
+      return res.status(400).json({ message: 'Cannot delete the root or default folder' });
+    }
+
+    console.log(`🗑️ Robust Folder Deletion: "${folderName}" for user: ${req.user._id}`);
+
+    // Find all files that are in this folder OR its subfolders
+    // Using regex to match "folderName" or "folderName/..."
+    const folderRegex = new RegExp(`^${folderName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}($|/)`);
+    
+    const medias = await Media.find({
+      user: req.user._id,
+      folder: { $regex: folderRegex }
+    });
+
+    if (medias.length === 0) {
+      return res.status(404).json({ message: 'No files found in this folder hierarchy' });
+    }
+
+    let deletedCount = 0;
+
+    for (const media of medias) {
+      // 🔥 STEP 1: DELETE FROM S3
+      if (s3Client && BUCKET_NAME && media.file_key) {
+        try {
+          await s3Client.send(
+            new DeleteObjectCommand({
+              Bucket: BUCKET_NAME,
+              Key: media.file_key,
+            })
+          );
+        } catch (err) {
+          console.warn(`S3 delete failed for ${media.file_key}:`, err.message);
+        }
+      }
+
+      // 🔥 STEP 2: DELETE LOCAL FILE
+      let filePath = "";
+      if (media.file_path) {
+        filePath = path.join(__dirname, "..", media.file_path);
+      } else if (media.file_location) {
+        const fileName = path.basename(media.file_location);
+        filePath = path.join(__dirname, "..", "uploads", fileName);
+      }
+
+      if (filePath && fs.existsSync(filePath)) {
+        try {
+          fs.unlinkSync(filePath);
+        } catch (err) {
+          console.warn(`Local file delete failed for ${filePath}:`, err.message);
+        }
+      }
+
+      // 🔥 STEP 3: DELETE FROM DB
+      await Media.findByIdAndDelete(media._id);
+      deletedCount++;
+    }
+
+    res.json({ message: `Folder "${folderName}" and its ${deletedCount} files deleted successfully` });
+  } catch (error) {
+    console.error('Delete Folder Error:', error);
+    res.status(500).json({ message: 'Delete folder failed' });
+  }
 };
 
 exports.listMedia = async (req, res) => {
