@@ -13,7 +13,7 @@ if (!process.env.MONGO_URI) {
   console.warn("⚠️ MONGO_URI not defined. Falling back to local MongoDB at mongodb://127.0.0.1:27017/uplodr");
 }
 
-fs.mkdirSync(path.join(__dirname, "uploads"), { recursive: true });
+// fs.mkdirSync(path.join(__dirname, "uploads"), { recursive: true }); // Disabled for S3
 
 // ✅ Middleware
 app.use(cors());

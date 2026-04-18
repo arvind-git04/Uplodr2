@@ -54,13 +54,16 @@ exports.uploadMedia = async (req, res) => {
       file_key: key,
       file_mimetype: mimetype,
       file_location: location,
-      file_path: req.file.path.replace(/\\/g, "/"),
       file_relative_path: fileRelativePath,
       file_name: filename,
       file_size: size,
       file_type: fileType,
       folder,
     });
+
+// 🔥 Public access via bucket policy (ACL disabled by bucket settings)
+    // Note: "bucket does not allow ACLs" is expected if "Bucket owner enforced"
+    console.log('✅ Upload complete - use bucket policy for public view');
 
     res.status(201).json({ message: 'Upload successful', media });
   } catch (error) {
